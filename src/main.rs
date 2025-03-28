@@ -1,5 +1,5 @@
 use clap::Parser;
-use reqwest::Error;
+use reqwest::{Client, Error, Response};
 use std::process;
 
 // const BASE_URL: &str = "https://dummy.restapiexample.com/api/v1/employees";
@@ -37,47 +37,45 @@ struct Args {
 struct HTTPClient {
     url: String,
     method: RESTMethods,
+    client: Client,
 }
 
 impl HTTPClient {
     fn new(url: String, method: RESTMethods) -> Self {
-        Self { url, method }
+        Self {
+            url,
+            method,
+            client: reqwest::Client::new(),
+        }
     }
 
-    async fn get(&self) -> Result<String, Error> {
-        let body = reqwest::get(self.url.clone()).await?.text().await?;
-        Ok(body)
+    async fn get(&self) -> Result<Response, Error> {
+        let res = self.client.get(self.url.to_owned()).send().await?;
+        Ok(res)
     }
 
-    async fn post(&self) -> Result<String, Error> {
-        let body = reqwest::get(self.url.clone()).await?.text().await?;
-        Ok(body)
+    async fn post(&self) -> Result<Response, Error> {
+        let res = self.client.post(self.url.clone()).body("").send().await?;
+        Ok(res)
     }
 
-    async fn put(&self) -> Result<String, Error> {
-        let body = reqwest::get(self.url.clone()).await?.text().await?;
-        Ok(body)
+    async fn put(&self) -> Result<Response, Error> {
+        let res = self.client.put(self.url.clone()).body("").send().await?;
+        Ok(res)
     }
 
-    async fn delete(&self) -> Result<String, Error> {
-        let body = reqwest::get(self.url.clone()).await?.text().await?;
-        Ok(body)
+    async fn delete(&self) -> Result<Response, Error> {
+        let res = self.client.delete(self.url.clone()).body("").send().await?;
+        Ok(res)
     }
 
-    async fn process(&self) -> Result<String, Error> {
+    async fn process(&self) -> Result<Response, Error> {
         match self.method {
             RESTMethods::GET => Ok(self.get().await?),
             RESTMethods::POST => Ok(self.post().await?),
             RESTMethods::PUT => Ok(self.put().await?),
             RESTMethods::DELETE => Ok(self.delete().await?),
         }
-    }
-
-    fn print(&self) {
-        println!(
-            "The url is {} and the method is {:?}.",
-            self.url, self.method
-        );
     }
 }
 
@@ -97,12 +95,10 @@ async fn main() {
 
     let client = HTTPClient::new(url.to_owned(), method);
 
-    client.print();
-
     let result = client.process().await;
 
     match result {
-        Ok(body) => println!("{}", body),
+        Ok(body) => println!("{:?}", body),
         Err(err) => println!("{}", err),
     }
 }
